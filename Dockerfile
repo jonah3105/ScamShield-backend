@@ -1,22 +1,21 @@
 
-FROM eclipse-temurin:17-jdk
+FROM maven:3.9-eclipse-temurin-17 AS build
 
 WORKDIR /app
 
 COPY pom.xml .
-COPY mvnw .
 COPY .mvn .mvn
+COPY mvnw .
 COPY src src
 
-RUN chmod +x mvnw \
-    && ./mvnw clean package -DskipTests \
-    && groupadd -r appgroup \
-    && useradd -r -g appgroup appuser
+RUN chmod +x mvnw && ./mvnw clean package -DskipTests
 
-COPY --from=0 --chown=appuser:appgroup /app/target/backend-0.0.1-SNAPSHOT.jar /app/app.jar
+FROM eclipse-temurin:17-jre
 
-USER appuser
+WORKDIR /app
+
+COPY --from=build /app/target/backend-0.0.1-SNAPSHOT.jar app.jar
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
